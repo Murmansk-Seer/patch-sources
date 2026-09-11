@@ -1,39 +1,21 @@
 name: Sync Upstream
-
-on:
+'on':
   schedule:
-    - cron: "35 */6 * * *"
+  - cron: 28 * * * *
   workflow_dispatch:
-
+    inputs:
+      dry_run:
+        description: Compare without pushing
+        type: boolean
+        default: false
 permissions:
   contents: write
-
 concurrency:
-  group: patch-sources-sync
+  group: sync-upstream-${{ github.repository }}
   cancel-in-progress: false
-
 jobs:
   sync:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout fork
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Merge upstream main
-        run: |
-          set -e
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote add upstream https://github.com/SeerAPI/patch-sources.git \
-            || git remote set-url upstream https://github.com/SeerAPI/patch-sources.git
-          git fetch upstream main
-
-          if git merge-base --is-ancestor upstream/main HEAD; then
-            echo "patch-sources upstream is unchanged."
-            exit 0
-          fi
-
-          git merge -X theirs -m "Sync upstream patch-sources" upstream/main
-          git push origin main
+    uses: Murmansk-Seer/.github/.github/workflows/sync-identical-reusable.yml@d3b692a474211875145305609c63205a287e738f
+    with:
+      implementation_ref: d3b692a474211875145305609c63205a287e738f
+      dry_run: ${{ inputs.dry_run == true }}
